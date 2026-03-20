@@ -44,7 +44,7 @@ export default function ClaimBadgePage() {
               />
             </div>
 
-           <Link href="/badge_copy" className="claim-button">
+           <Link href="/badge" className="claim-button">
   Reclamar mi insignia →
 </Link>
 
