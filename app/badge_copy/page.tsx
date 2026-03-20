@@ -1,13 +1,18 @@
 import Link from "next/link";
+import '../ClaimBadgePage.css';
 
-export default function BadgePage() {
+export default function BadgePageCopy() {
   return (
     <div className="badge-page-copy">
       <main className="login-page">
         <div className="login-card">
           <div className="login-header">
             <div className="avatar-ring">
-              <div className="avatar-core">🤖</div>
+              <img
+                src="/img/image.png"
+                alt="IA Badge"
+                className="avatar-img"
+              />
             </div>
 
             <h1 className="login-title">csa</h1>

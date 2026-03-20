@@ -1,0 +1,412 @@
+/* claim-badge */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Arial', sans-serif;
+  background: white;
+  color: #333333;
+}
+
+.claim-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: white;
+}
+
+.claim-wrapper {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 20px;
+  padding: 30px;
+}
+
+.claim-top {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.claim-pill {
+  background: rgba(233, 30, 140, 0.1);
+  color: #E91E8C;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 999px;
+  padding: 8px 14px;
+  border: 1px solid #E91E8C;
+}
+
+.claim-badge-circle {
+  width: 154px;
+  height: 154px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #E91E8C 0%, #1A1B5E 100%);
+  box-shadow: 0 12px 28px rgba(233, 30, 140, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(245, 237, 214, 0.7);
+}
+
+.claim-badge-emoji {
+  font-size: 42px;
+  margin-bottom: 8px;
+  color: white;
+}
+
+.claim-badge-text {
+  color: #F5EDD6;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.claim-hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.claim-title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  color: #1A1B5E;
+  font-weight: 700;
+}
+
+.claim-meta {
+  margin: 0 0 10px;
+  font-size: 15px;
+  color: #555555;
+}
+
+.claim-chip {
+  display: inline-block;
+  background: rgba(233, 30, 140, 0.1);
+  color: #E91E8C;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid #E91E8C;
+}
+
+.claim-card {
+  width: 100%;
+  max-width: 370px;
+  background: white;
+  border: 1px solid #e0d5c5;
+  border-radius: 18px;
+  padding: 28px 30px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.claim-card-title {
+  margin: 0 0 18px;
+  font-size: 18px;
+  color: #E91E8C;
+}
+
+.claim-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.claim-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.claim-group label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #E91E8C;
+  letter-spacing: 1px;
+}
+
+.claim-group input {
+  height: 42px;
+  border: 1px solid #BDBDBD;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 15px;
+  outline: none;
+  background: #FAFAFA;
+}
+
+.claim-group input:focus {
+  border-color: #E91E8C;
+  box-shadow: 0 0 0 3px rgba(233, 30, 140, 0.2);
+}
+
+.claim-button {
+  height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: #E91E8C;
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.claim-button:hover {
+  background: #1A1B5E;
+}
+
+.claim-note {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #666666;
+}
+
+@media (max-width: 768px) {
+  .claim-page {
+    padding: 16px;
+  }
+
+  .claim-title {
+    font-size: 24px;
+  }
+
+  .claim-badge-circle {
+    width: 136px;
+    height: 136px;
+  }
+}
+
+.claim-badge-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+
+/*badge_page_copy*/
+
+.badge-page-copy .login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: white;
+}
+
+.badge-page-copy .login-card {
+  width: 100%;
+  max-width: 500px;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.badge-page-copy .login-header {
+  background: linear-gradient(180deg, #E91E8C 0%, #1A1B5E 100%);
+  color: white;
+  text-align: center;
+  padding: 34px 24px 40px;
+}
+
+.badge-page-copy .avatar-ring {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 3px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 6px rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.badge-page-copy .avatar-core {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+}
+
+.badge-page-copy .avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.badge-page-copy .login-title {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.badge-page-copy .login-subtitle {
+  margin: 10px 0 4px;
+  font-size: 17px;
+  color: #ffd6ef;
+}
+
+.badge-page-copy .login-meta {
+  margin: 0;
+  font-size: 14px;
+  color: #f5b8dd;
+}
+
+.badge-page-copy .login-body {
+  padding: 30px 32px 36px;
+}
+
+.badge-page-copy .badge-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.badge-page-copy .badge-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  border-bottom: 1px solid #f0d5e8;
+  padding-bottom: 12px;
+}
+
+.badge-page-copy .badge-label {
+  color: #384152;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.badge-page-copy .badge-value {
+  text-align: right;
+  font-size: 15px;
+  color: #1f2937;
+}
+
+.badge-page-copy .badge-verify-box {
+  background: rgba(233, 30, 140, 0.07);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.badge-page-copy .badge-check {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #E91E8C;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.badge-page-copy .badge-verify-title {
+  color: #E91E8C;
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
+.badge-page-copy .badge-verify-text {
+  font-size: 13px;
+  color: #5b6475;
+}
+
+.badge-page-copy .badge-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.badge-page-copy .badge-action-button {
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #E91E8C;
+  background: #fff;
+  color: #E91E8C;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.badge-page-copy .badge-action-button:hover {
+  background: rgba(233, 30, 140, 0.07);
+}
+
+.badge-page-copy .badge-passport-box {
+  background: #1A1B5E;
+  color: white;
+  border-radius: 20px;
+  padding: 28px 22px;
+  text-align: center;
+  margin-top: 6px;
+}
+
+.badge-page-copy .badge-passport-title {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+}
+
+.badge-page-copy .badge-passport-text {
+  margin: 0 0 18px 0;
+  color: #d9d9d9;
+  font-size: 14px;
+}
+
+.badge-page-copy .badge-passport-button {
+  display: inline-block;
+  background: #E91E8C;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 14px 20px;
+  transition: 0.2s ease;
+}
+
+.badge-page-copy .badge-passport-button:hover {
+  background: #c4177a;
+}
+
+@media (max-width: 640px) {
+  .badge-page-copy .badge-row {
+    grid-template-columns: 1fr;
+  }
+
+  .badge-page-copy .badge-value {
+    text-align: left;
+  }
+
+  .badge-page-copy .badge-actions {
+    grid-template-columns: 1fr;
+  }
+}
