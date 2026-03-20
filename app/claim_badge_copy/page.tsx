@@ -1,4 +1,4 @@
-
+import Link from 'next/link';
 import '../ClaimBadgePage.css'; 
 export default function ClaimBadgePage() {
   return (
@@ -47,11 +47,9 @@ export default function ClaimBadgePage() {
                 placeholder="ana@ejemplo.com"
               />
             </div>
-
-            <button type="submit" className="claim-button">
-              Reclamar mi insignia →
-            </button>
-
+            <Link href="/badge_copy" className="claim-button">
+  Reclamar mi insignia →
+</Link>
             <p className="claim-note">
               🔒 Sin wallet ni app necesaria · Solo tu email
             </p>

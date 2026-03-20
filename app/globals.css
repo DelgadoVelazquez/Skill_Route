@@ -418,14 +418,24 @@ body {
   box-shadow: 0 0 0 3px rgba(45, 79, 174, 0.12);
 }
 
+/* 🔥 BOTÓN ARREGLADO PARA LINK + TEXTO */
 .claim-button {
+  display: flex;              /* clave */
+  align-items: center;        /* centra vertical */
+  justify-content: center;    /* centra horizontal */
+
+  width: 100%;                /* ocupa todo el ancho */
   height: 44px;
-  border: none;
+
   border-radius: 10px;
   background: #183b8f;
   color: white;
   font-size: 16px;
   font-weight: 700;
+
+  text-decoration: none;      /* quita subrayado */
+  text-align: center;
+
   cursor: pointer;
   transition: 0.2s ease;
 }
