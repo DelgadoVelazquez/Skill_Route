@@ -1,37 +1,106 @@
-import Link from "next/link";
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+
+interface Loan {
+  id: string;
+  program: string;
+  institution: string;
+  totalCost: number;
+  loanAmount: number;
+  monthlyPayment: number;
+  termMonths: number;
+  txid: string;
+  explorerUrl: string;
+  status: string;
+  createdAt: string;
+}
+
+const MOCK_BADGES = [
+  { title: 'Pionero en Inteligencia Artificial', issuer: 'TechSummit México', date: '13 Mar 2026', icon: '🤖', color: 'linear-gradient(135deg, #112a68, #2d4fae)' },
+  { title: 'Innovador en Machine Learning',      issuer: 'DataLab CDMX',      date: '20 Ene 2026', icon: '🧠', color: 'linear-gradient(135deg, #7b2ff7, #2d4fae)' },
+  { title: 'Certificado en Blockchain',          issuer: 'Stellar Foundation', date: '5 Feb 2026',  icon: '⛓️', color: 'linear-gradient(135deg, #f57c00, #ffd54f)' },
+];
 
 export default function PassportPage() {
+  const router = useRouter();
+  const [user, setUser]   = useState<{ email: string; full_name: string } | null>(null);
+  const [loans, setLoans] = useState<Loan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      // Datos del usuario
+      const { data: userData } = await supabase
+        .from('users')
+        .select('email, full_name')
+        .eq('email', session.user.email)
+        .single();
+
+      setUser(userData ?? { email: session.user.email!, full_name: session.user.email!.split('@')[0] });
+
+      // Préstamos guardados en localStorage
+      const saved = localStorage.getItem('sr_loans');
+      if (saved) setLoans(JSON.parse(saved));
+
+      setLoading(false);
+    }
+    loadData();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef1f6' }}>
+        <p style={{ color: '#6b7280', fontSize: 15 }}>Cargando Passport...</p>
+      </main>
+    );
+  }
+
+  const initial  = user?.full_name?.[0]?.toUpperCase() ?? '?';
+  const handle   = '@' + (user?.email?.split('@')[0] ?? 'usuario');
+  const name     = user?.full_name ?? user?.email ?? 'Usuario';
+  const badgeCount = MOCK_BADGES.length;
+  const badgeLimit = 5;
+
   return (
     <main className="passport-page">
 
-      {/* Header con banner y avatar */}
+      {/* Header */}
       <div className="passport-card">
         <div className="passport-banner" />
         <div className="passport-profile">
-          <div className="passport-avatar">A</div>
+          <div className="passport-avatar">{initial}</div>
           <div className="passport-info">
             <div className="passport-name-row">
-              <h1 className="passport-name">Ana García López</h1>
+              <h1 className="passport-name">{name}</h1>
               <span className="passport-badge-free">⭐ FREE BETA</span>
             </div>
-            <p className="passport-handle">@ana.garcia</p>
-            <p className="passport-since">Miembro desde marzo 2026</p>
+            <p className="passport-handle">{handle}</p>
+            <p className="passport-since">Miembro desde marzo 2026 · {user?.email}</p>
           </div>
         </div>
 
-        {/* Stats */}
         <div className="passport-stats">
           <div className="passport-stat">
-            <span className="passport-stat-number">3</span>
+            <span className="passport-stat-number">{badgeCount}</span>
             <span className="passport-stat-label">BADGES GUARDADOS</span>
           </div>
           <div className="passport-stat">
-            <span className="passport-stat-number">5</span>
+            <span className="passport-stat-number">{badgeLimit}</span>
             <span className="passport-stat-label">LÍMITE PLAN FREE</span>
           </div>
           <div className="passport-stat">
-            <span className="passport-stat-number">1</span>
-            <span className="passport-stat-label">EVENTO VERIFICADO</span>
+            <span className="passport-stat-number">{loans.length}</span>
+            <span className="passport-stat-label">PRÉSTAMOS ACTIVOS</span>
           </div>
         </div>
       </div>
@@ -42,66 +111,97 @@ export default function PassportPage() {
         <button className="passport-btn-solid">in Compartir en LinkedIn</button>
       </div>
 
+      {/* Préstamos activos */}
+      {loans.length > 0 && (
+        <div className="passport-section">
+          <h2 className="passport-section-title">
+            Mis préstamos educativos
+            <span className="passport-count">{loans.length} activo{loans.length > 1 ? 's' : ''}</span>
+          </h2>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {loans.map(loan => (
+              <div key={loan.id} style={{
+                background: 'white', borderRadius: 16, padding: 20,
+                border: '2px solid #dbe6ff', boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <p style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 700, color: '#111827' }}>{loan.program}</p>
+                    <p style={{ margin: 0, fontSize: 13, color: '#6b7280' }}>{loan.institution}</p>
+                  </div>
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 999,
+                    background: loan.status === 'active' ? '#f0fdf4' : '#fef2f2',
+                    color: loan.status === 'active' ? '#16a34a' : '#dc2626',
+                    border: `1px solid ${loan.status === 'active' ? '#bbf7d0' : '#fecaca'}`,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {loan.status === 'active' ? '✓ Activo' : loan.status}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 14 }}>
+                  {[
+                    { label: 'PRÉSTAMO',  value: `$${loan.loanAmount.toLocaleString()} MXN` },
+                    { label: 'CUOTA/MES', value: `$${loan.monthlyPayment.toLocaleString()} MXN` },
+                    { label: 'PLAZO',     value: `${loan.termMonths} meses` },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 12px', border: '1px solid #e5e7eb' }}>
+                      <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.5px' }}>{label}</p>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#2d4fae' }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ background: '#f0f4ff', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+                  <p style={{ margin: '0 0 2px', fontSize: 11, fontWeight: 700, color: '#2d4fae', letterSpacing: '0.5px' }}>⛓️ SMART CONTRACT · STELLAR TESTNET</p>
+                  <p style={{ margin: 0, fontSize: 11, fontFamily: 'monospace', color: '#374151', wordBreak: 'break-all' }}>{loan.txid}</p>
+                </div>
+
+                <a
+                  href={loan.explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'block', textAlign: 'center', padding: '10px 0', borderRadius: 10,
+                    background: '#112a68', color: 'white', fontWeight: 700, fontSize: 14, textDecoration: 'none',
+                  }}
+                >
+                  🔗 Ver contrato en StellarExpert ↗
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Badges */}
       <div className="passport-section">
         <h2 className="passport-section-title">
           Mis badges verificados
-          <span className="passport-count">3 de 5</span>
+          <span className="passport-count">{badgeCount} de {badgeLimit}</span>
         </h2>
 
         <div className="passport-badges-grid">
-
-          <div className="passport-badge-card">
-            <div className="passport-badge-top">
-              <div className="passport-badge-icon" style={{ background: "linear-gradient(135deg, #112a68, #2d4fae)" }}>🤖</div>
-              <div>
-                <p className="passport-badge-title">Pionero en Inteligencia Artificial</p>
-                <p className="passport-badge-issuer">TechSummit México</p>
+          {MOCK_BADGES.map(badge => (
+            <div key={badge.title} className="passport-badge-card">
+              <div className="passport-badge-top">
+                <div className="passport-badge-icon" style={{ background: badge.color }}>{badge.icon}</div>
+                <div>
+                  <p className="passport-badge-title">{badge.title}</p>
+                  <p className="passport-badge-issuer">{badge.issuer}</p>
+                </div>
+              </div>
+              <div className="passport-badge-bottom">
+                <span className="passport-badge-date">{badge.date}</span>
+                <div className="passport-badge-verify">
+                  <span className="passport-stellar-chip">🔗 STELLAR</span>
+                  <button className="passport-verify-btn">Verificar ↗</button>
+                </div>
               </div>
             </div>
-            <div className="passport-badge-bottom">
-              <span className="passport-badge-date">13 Mar 2026</span>
-              <div className="passport-badge-verify">
-                <span className="passport-stellar-chip">🔗 STELLAR</span>
-                <button className="passport-verify-btn">Verificar ↗</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="passport-badge-card">
-            <div className="passport-badge-top">
-              <div className="passport-badge-icon" style={{ background: "linear-gradient(135deg, #7b2ff7, #2d4fae)" }}>🧠</div>
-              <div>
-                <p className="passport-badge-title">Innovador en Machine Learning</p>
-                <p className="passport-badge-issuer">DataLab CDMX</p>
-              </div>
-            </div>
-            <div className="passport-badge-bottom">
-              <span className="passport-badge-date">20 Ene 2026</span>
-              <div className="passport-badge-verify">
-                <span className="passport-stellar-chip">🔗 STELLAR</span>
-                <button className="passport-verify-btn">Verificar ↗</button>
-              </div>
-            </div>
-          </div>
-
-          <div className="passport-badge-card">
-            <div className="passport-badge-top">
-              <div className="passport-badge-icon" style={{ background: "linear-gradient(135deg, #f57c00, #ffd54f)" }}>⛓️</div>
-              <div>
-                <p className="passport-badge-title">Certificado en Blockchain</p>
-                <p className="passport-badge-issuer">Stellar Foundation</p>
-              </div>
-            </div>
-            <div className="passport-badge-bottom">
-              <span className="passport-badge-date">5 Feb 2026</span>
-              <div className="passport-badge-verify">
-                <span className="passport-stellar-chip">🔗 STELLAR</span>
-                <button className="passport-verify-btn">Verificar ↗</button>
-              </div>
-            </div>
-          </div>
-
+          ))}
         </div>
       </div>
 
@@ -109,14 +209,13 @@ export default function PassportPage() {
       <div className="passport-capacity">
         <div className="passport-capacity-row">
           <span className="passport-capacity-label">Capacidad del plan Free</span>
-          <span className="passport-capacity-label">3 / 5 badges</span>
+          <span className="passport-capacity-label">{badgeCount} / {badgeLimit} badges</span>
         </div>
         <div className="passport-capacity-bar">
-          <div className="passport-capacity-fill" style={{ width: "60%" }} />
+          <div className="passport-capacity-fill" style={{ width: `${(badgeCount / badgeLimit) * 100}%` }} />
         </div>
       </div>
 
-      {/* Footer */}
       <div className="passport-footer">
         <button className="passport-footer-btn">Verificando en StellarExpert...</button>
       </div>

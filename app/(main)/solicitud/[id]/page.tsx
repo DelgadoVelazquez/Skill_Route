@@ -62,6 +62,24 @@ export default function SolicitudPage() {
       if (data.success) {
         setTxid(data.txid);
         setExplorerUrl(data.explorerUrl);
+
+        // Guardar préstamo en localStorage para mostrarlo en el Passport
+        const newLoan = {
+          id: data.txid,
+          program: p.nombre,
+          institution: p.institucion,
+          totalCost: p.costo,
+          loanAmount: prestamo,
+          monthlyPayment: cuota,
+          termMonths: termMeses,
+          txid: data.txid,
+          explorerUrl: data.explorerUrl,
+          status: 'active',
+          createdAt: new Date().toISOString(),
+        };
+        const existing = JSON.parse(localStorage.getItem('sr_loans') ?? '[]');
+        localStorage.setItem('sr_loans', JSON.stringify([...existing, newLoan]));
+
         setStep('confirmado');
       } else {
         alert('Error al crear contrato: ' + data.error);
