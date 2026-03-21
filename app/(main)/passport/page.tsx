@@ -18,16 +18,23 @@ interface Loan {
   createdAt: string;
 }
 
-const MOCK_BADGES = [
-  { title: 'Pionero en Inteligencia Artificial', issuer: 'TechSummit México', date: '13 Mar 2026', icon: '🤖', color: 'linear-gradient(135deg, #112a68, #2d4fae)' },
-  { title: 'Innovador en Machine Learning',      issuer: 'DataLab CDMX',      date: '20 Ene 2026', icon: '🧠', color: 'linear-gradient(135deg, #7b2ff7, #2d4fae)' },
-  { title: 'Certificado en Blockchain',          issuer: 'Stellar Foundation', date: '5 Feb 2026',  icon: '⛓️', color: 'linear-gradient(135deg, #f57c00, #ffd54f)' },
-];
+interface ClaimRecord {
+  code: string;
+  title: string;
+  issuer: string;
+  event: string;
+  description: string;
+  imageUrl: string;
+  claimedAt: string;
+  claimerName: string;
+  claimerEmail: string;
+}
 
 export default function PassportPage() {
   const router = useRouter();
-  const [user, setUser]   = useState<{ email: string; full_name: string } | null>(null);
-  const [loans, setLoans] = useState<Loan[]>([]);
+  const [user, setUser]     = useState<{ email: string; full_name: string } | null>(null);
+  const [loans, setLoans]   = useState<Loan[]>([]);
+  const [badges, setBadges] = useState<ClaimRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,6 +59,11 @@ export default function PassportPage() {
       const saved = localStorage.getItem('sr_loans');
       if (saved) setLoans(JSON.parse(saved));
 
+      // Badges reclamados por este usuario
+      const allClaims: Record<string, ClaimRecord[]> = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '{}');
+      const userEmail = session.user.email?.toLowerCase() ?? '';
+      setBadges(allClaims[userEmail] ?? []);
+
       setLoading(false);
     }
     loadData();
@@ -65,10 +77,10 @@ export default function PassportPage() {
     );
   }
 
-  const initial  = user?.full_name?.[0]?.toUpperCase() ?? '?';
-  const handle   = '@' + (user?.email?.split('@')[0] ?? 'usuario');
-  const name     = user?.full_name ?? user?.email ?? 'Usuario';
-  const badgeCount = MOCK_BADGES.length;
+  const initial    = user?.full_name?.[0]?.toUpperCase() ?? '?';
+  const handle     = '@' + (user?.email?.split('@')[0] ?? 'usuario');
+  const name       = user?.full_name ?? user?.email ?? 'Usuario';
+  const badgeCount = badges.length;
   const badgeLimit = 5;
 
   return (
@@ -183,26 +195,47 @@ export default function PassportPage() {
           <span className="passport-count">{badgeCount} de {badgeLimit}</span>
         </h2>
 
-        <div className="passport-badges-grid">
-          {MOCK_BADGES.map(badge => (
-            <div key={badge.title} className="passport-badge-card">
-              <div className="passport-badge-top">
-                <div className="passport-badge-icon" style={{ background: badge.color }}>{badge.icon}</div>
-                <div>
-                  <p className="passport-badge-title">{badge.title}</p>
-                  <p className="passport-badge-issuer">{badge.issuer}</p>
+        {badges.length === 0 ? (
+          <div style={{
+            background: 'white', borderRadius: 16, padding: 32, textAlign: 'center',
+            border: '2px dashed #e5e7eb', color: '#9ca3af',
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 10 }}>🏅</div>
+            <p style={{ margin: '0 0 6px', fontWeight: 700, color: '#374151' }}>Sin badges todavía</p>
+            <p style={{ margin: 0, fontSize: 13 }}>Reclama badges de eventos y programas para verlos aquí.</p>
+          </div>
+        ) : (
+          <div className="passport-badges-grid">
+            {badges.map(badge => (
+              <div key={badge.code} className="passport-badge-card">
+                <div className="passport-badge-top">
+                  <div className="passport-badge-icon" style={{
+                    background: badge.imageUrl ? 'transparent' : 'linear-gradient(135deg, #112a68, #2d4fae)',
+                    overflow: 'hidden',
+                  }}>
+                    {badge.imageUrl
+                      ? <img src={badge.imageUrl} alt={badge.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : '🏅'
+                    }
+                  </div>
+                  <div>
+                    <p className="passport-badge-title">{badge.title}</p>
+                    <p className="passport-badge-issuer">{badge.issuer}</p>
+                  </div>
+                </div>
+                <div className="passport-badge-bottom">
+                  <span className="passport-badge-date">
+                    {new Date(badge.claimedAt).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  <div className="passport-badge-verify">
+                    <span className="passport-stellar-chip">🔗 STELLAR</span>
+                    <button className="passport-verify-btn">Verificar ↗</button>
+                  </div>
                 </div>
               </div>
-              <div className="passport-badge-bottom">
-                <span className="passport-badge-date">{badge.date}</span>
-                <div className="passport-badge-verify">
-                  <span className="passport-stellar-chip">🔗 STELLAR</span>
-                  <button className="passport-verify-btn">Verificar ↗</button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Barra de capacidad */}
