@@ -42,8 +42,7 @@ export default function CrearBadgePage() {
 
     // Generar código único
     const code = 'BADGE-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
-    const claimUrl = `${appUrl}/claim/${code}`;
+    const claimUrl = `${window.location.origin}/claim_badge?code=${code}`;
 
     const badge: CreatedBadge = {
       code,

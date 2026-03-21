@@ -35,6 +35,16 @@ export default function Navbar() {
         <Link href="/route" style={navLink}>Route</Link>
         <Link href="/passport" style={navLink}>Mi Passport</Link>
         <Link href="/contrato" style={navLink}>Smart Contract</Link>
+        <Link href="/badge/crear" style={{
+          ...navLink,
+          background: '#5b21b6',
+          borderRadius: 8,
+          padding: '6px 14px',
+          color: 'white',
+          fontWeight: 700,
+        }}>
+          🏅 Crear Badge
+        </Link>
         <Link href="/passport/login" style={{
           ...navLink,
           background: '#2d4fae',
