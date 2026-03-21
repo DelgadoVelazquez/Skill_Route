@@ -139,7 +139,7 @@ export default function ContratoPage() {
                 }}
               >
                 <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 14, color: '#111827' }}>{p.name}</p>
-                <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{p.institution} · ${p.cost.toLocaleString()} MXN · {p.duration} meses</p>
+                <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{p.institution} · ${p.cost.toLocaleString('es-MX')} MXN · {p.duration} meses</p>
               </button>
             ))}
           </div>
@@ -153,11 +153,11 @@ export default function ContratoPage() {
               {[
                 { label: 'Programa', value: prog.name },
                 { label: 'Institución', value: prog.institution },
-                { label: 'Costo total', value: `$${prog.cost.toLocaleString()} MXN` },
-                { label: 'Depósito (10%)', value: `$${deposit.toLocaleString()} MXN` },
-                { label: 'Monto del préstamo', value: `$${loan.toLocaleString()} MXN` },
+                { label: 'Costo total', value: `$${prog.cost.toLocaleString('es-MX')} MXN` },
+                { label: 'Depósito (10%)', value: `$${deposit.toLocaleString('es-MX')} MXN` },
+                { label: 'Monto del préstamo', value: `$${loan.toLocaleString('es-MX')} MXN` },
                 { label: 'Plazo de pago', value: `${term} meses (${prog.duration}m + 6 gracia)` },
-                { label: 'Cuota mensual', value: `$${monthly.toLocaleString()} MXN/mes` },
+                { label: 'Cuota mensual', value: `$${monthly.toLocaleString('es-MX')} MXN/mes` },
                 { label: 'Interés por mora', value: '10% sobre cuota vencida' },
                 { label: '1er incumplimiento', value: 'Cargo 10% + descuento depósito' },
                 { label: '2+ incumplimientos', value: 'Ejecución fianza + Boletín Moroso' },
