@@ -1,0 +1,49 @@
+import Link from 'next/link';
+
+export default function Navbar() {
+  return (
+    <nav style={{
+      background: '#0a0a1a',
+      padding: '0 24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      height: 56,
+      position: 'sticky',
+      top: 0,
+      zIndex: 100,
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+    }}>
+      <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 20 }}>⛓️</span>
+        <span style={{ color: 'white', fontWeight: 800, fontSize: 16, letterSpacing: 0.5 }}>Skill Route</span>
+      </Link>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Link href="/programas" style={navLink}>Programas</Link>
+        <Link href="/passport" style={navLink}>Mi Passport</Link>
+        <Link href="/contrato" style={navLink}>Smart Contract</Link>
+        <Link href="/passport/login" style={{
+          ...navLink,
+          background: '#2d4fae',
+          borderRadius: 8,
+          padding: '6px 14px',
+          color: 'white',
+          fontWeight: 700,
+        }}>
+          Conectar Wallet
+        </Link>
+      </div>
+    </nav>
+  );
+}
+
+const navLink: React.CSSProperties = {
+  color: 'rgba(255,255,255,0.75)',
+  textDecoration: 'none',
+  fontSize: 14,
+  fontWeight: 600,
+  padding: '6px 12px',
+  borderRadius: 8,
+  transition: '0.2s',
+};

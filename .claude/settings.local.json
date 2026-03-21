@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx next:*)",
+      "Bash(node -e \"const {Keypair} = require\\(''@stellar/stellar-sdk''\\); const kp = Keypair.random\\(\\); console.log\\(''PUBLIC:'', kp.publicKey\\(\\)\\); console.log\\(''SECRET:'', kp.secret\\(\\)\\);\")",
+      "Bash(node -e \"const {Keypair} = require\\(''''@stellar/stellar-sdk''''\\); const kp = Keypair.random\\(\\); console.log\\(''''PUBLIC:'''', kp.publicKey\\(\\)\\); console.log\\(''''SECRET:'''', kp.secret\\(\\)\\);\")",
+      "Bash(curl -s \"https://friendbot.stellar.org?addr=GAZMSTBJCRNWVLRP3KZS6EIC3ZTS3O3N25VTYSINNC2UB6VBRNN2PG3U\")",
+      "Bash(curl -s \"https://horizon-testnet.stellar.org/accounts/GAZMSTBJCRNWVLRP3KZS6EIC3ZTS3O3N25VTYSINNC2UB6VBRNN2PG3U\")"
+    ]
+  }
+}
