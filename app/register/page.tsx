@@ -1,4 +1,42 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
+
 export default function RegisterPage() {
+  const router = useRouter();
+  const [fullName, setFullName]         = useState('');
+  const [email, setEmail]               = useState('');
+  const [password, setPassword]         = useState('');
+  const [confirmPassword, setConfirm]   = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState('');
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+
+    if (password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
+      return;
+    }
+
+    setLoading(true);
+
+    // 1. Crear usuario en auth.users
+    const { data, error: authError } = await supabase.auth.signUp({ email, password });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
+    router.push('/passport');
+    setLoading(false);
+  }
+
   return (
     <main className="login-page">
       <div className="login-card">
@@ -6,18 +44,20 @@ export default function RegisterPage() {
           <div className="avatar-ring">
             <div className="avatar-core">📝</div>
           </div>
-
           <h1 className="login-title">Crear cuenta</h1>
         </div>
 
         <div className="login-body">
-          <form className="login-form">
+          <form className="login-form" onSubmit={handleRegister}>
             <div className="form-group">
               <label htmlFor="name">Nombre completo</label>
               <input
                 id="name"
                 type="text"
                 placeholder="Ingresa tu nombre completo"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                required
               />
             </div>
 
@@ -27,6 +67,9 @@ export default function RegisterPage() {
                 id="email"
                 type="email"
                 placeholder="Ingresa tu correo"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                required
               />
             </div>
 
@@ -36,6 +79,9 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 placeholder="Crea una contraseña"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
               />
             </div>
 
@@ -45,11 +91,20 @@ export default function RegisterPage() {
                 id="confirmPassword"
                 type="password"
                 placeholder="Confirma tu contraseña"
+                value={confirmPassword}
+                onChange={e => setConfirm(e.target.value)}
+                required
               />
             </div>
 
-            <button type="submit" className="login-button">
-              Registrarse
+            {error && (
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: '#dc2626', textAlign: 'center' }}>
+                {error}
+              </p>
+            )}
+
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? 'Creando cuenta...' : 'Registrarse'}
             </button>
 
             <div className="login-links">

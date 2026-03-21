@@ -1,6 +1,17 @@
+'use client';
+
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
+  const router = useRouter();
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   return (
     <nav style={{
       background: '#0a0a1a',
@@ -21,6 +32,7 @@ export default function Navbar() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <Link href="/programas" style={navLink}>Programas</Link>
+        <Link href="/route" style={navLink}>Route</Link>
         <Link href="/passport" style={navLink}>Mi Passport</Link>
         <Link href="/contrato" style={navLink}>Smart Contract</Link>
         <Link href="/passport/login" style={{
@@ -33,6 +45,19 @@ export default function Navbar() {
         }}>
           Conectar Wallet
         </Link>
+        <button onClick={handleSignOut} style={{
+          ...navLink,
+          background: 'transparent',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: 8,
+          padding: '6px 14px',
+          color: 'rgba(255,255,255,0.75)',
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontSize: 14,
+        }}>
+          Cerrar sesión
+        </button>
       </div>
     </nav>
   );
