@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,17 +15,24 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
 
-    if (error) {
-      setError('Correo o contraseña incorrectos.');
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? 'Correo o contraseña incorrectos.');
     } else {
-      router.push('/passport');
+      // Redirigir según rol
+      if (data.role === 'fondeadora') router.push('/fondeadora/dashboard');
+      else if (data.role === 'institucion') router.push('/badge/crear');
+      else router.push('/passport');
     }
     setLoading(false);
   }
-
-  // Google OAuth pendiente de habilitar en Supabase
 
   return (
     <main className="login-page">
@@ -39,7 +45,6 @@ export default function LoginPage() {
         </div>
 
         <div className="login-body">
-
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>

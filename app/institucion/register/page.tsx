@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 
 export default function InstitucionRegisterPage() {
   const router = useRouter();
@@ -20,20 +19,16 @@ export default function InstitucionRegisterPage() {
     if (password !== confirm) { setError('Las contraseñas no coinciden.'); return; }
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signUp({
-      email, password,
-      options: { data: { full_name: name, role: 'institucion' } },
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, fullName: name, role: 'institucion' }),
     });
+    const data = await res.json();
 
-    if (authError) {
-      setError(authError.message);
+    if (!res.ok) {
+      setError(data.error ?? 'Error al crear la cuenta.');
     } else {
-      // Guardar en tabla users con rol
-      await fetch('/api/user/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, fullName: name, role: 'institucion' }),
-      });
       router.push('/badge/crear');
     }
     setLoading(false);

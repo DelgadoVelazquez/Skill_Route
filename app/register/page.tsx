@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -24,23 +23,19 @@ export default function RegisterPage() {
 
     setLoading(true);
 
-    // 1. Crear usuario en auth.users
-    const { data, error: authError } = await supabase.auth.signUp({ email, password });
-
-    if (authError) {
-      setError(authError.message);
-      setLoading(false);
-      return;
-    }
-
-    // 2. Generar wallet Stellar y guardar en tabla users
-    await fetch('/api/user/create', {
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, fullName }),
+      body: JSON.stringify({ email, password, fullName }),
     });
 
-    router.push('/passport');
+    const json = await res.json();
+
+    if (!res.ok) {
+      setError(json.error ?? 'Error al crear la cuenta.');
+    } else {
+      router.push('/passport');
+    }
     setLoading(false);
   }
 

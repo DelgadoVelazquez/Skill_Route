@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 
 export default function InstitucionLoginPage() {
   const router = useRouter();
@@ -17,10 +16,15 @@ export default function InstitucionLoginPage() {
     setLoading(true);
     setError('');
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
 
-    if (authError) {
-      setError('Correo o contraseña incorrectos.');
+    if (!res.ok) {
+      setError(data.error ?? 'Correo o contraseña incorrectos.');
     } else {
       router.push('/badge/crear');
     }

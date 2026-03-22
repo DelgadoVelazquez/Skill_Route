@@ -1,40 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Keypair } from '@stellar/stellar-sdk';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-);
+import pool from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, fullName } = await req.json();
+    const { email, fullName, role = 'cliente' } = await req.json();
 
     if (!email) {
       return NextResponse.json({ error: 'email requerido' }, { status: 400 });
     }
 
-    // Generar keypair Stellar para la wallet del usuario
     const keypair = Keypair.random();
     const stellarPublicKey = keypair.publicKey();
 
-    // Guardar en la tabla users (upsert por si ya existe)
-    const { error } = await supabaseAdmin
-      .from('users')
-      .upsert(
-        { email, full_name: fullName ?? email.split('@')[0], stellar_public_key: stellarPublicKey },
-        { onConflict: 'email' },
-      );
-
-    if (error) {
-      console.error('Supabase error:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    await pool.query(
+      `INSERT INTO users (email, full_name, stellar_public_key, role)
+       VALUES (?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+         full_name = COALESCE(VALUES(full_name), full_name),
+         stellar_public_key = COALESCE(stellar_public_key, VALUES(stellar_public_key))`,
+      [email.toLowerCase().trim(), fullName ?? email.split('@')[0], stellarPublicKey, role]
+    );
 
     return NextResponse.json({ success: true, stellarPublicKey });
   } catch (err) {
-    console.error(err);
+    console.error('[user/create]', err);
     return NextResponse.json({ error: 'Error interno' }, { status: 500 });
   }
 }

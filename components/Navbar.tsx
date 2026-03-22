@@ -2,14 +2,13 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 export default function Navbar() {
   const router = useRouter();
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push('/login');
+    await fetch('/api/auth/logout', { method: 'POST' });
+    router.push('/');
   }
 
   return (
@@ -35,6 +34,7 @@ export default function Navbar() {
         <Link href="/route" style={navLink}>Route</Link>
         <Link href="/passport" style={navLink}>Mi Passport</Link>
         <Link href="/contrato" style={navLink}>Smart Contract</Link>
+        <Link href="/fondeadora/dashboard" style={{ ...navLink, color: '#22d3ee' }}>📊 Impacto</Link>
         <Link href="/badge/crear" style={{
           ...navLink,
           background: '#5b21b6',
@@ -45,17 +45,7 @@ export default function Navbar() {
         }}>
           🏅 Crear Badge
         </Link>
-        <Link href="/passport/login" style={{
-          ...navLink,
-          background: '#2d4fae',
-          borderRadius: 8,
-          padding: '6px 14px',
-          color: 'white',
-          fontWeight: 700,
-        }}>
-          Conectar Wallet
-        </Link>
-        <button onClick={handleSignOut} style={{
+<button onClick={handleSignOut} style={{
           ...navLink,
           background: 'transparent',
           border: '1px solid rgba(255,255,255,0.2)',

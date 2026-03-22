@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 
 interface Loan {
   id: string;
@@ -41,21 +40,15 @@ export default function PassportPage() {
 
   useEffect(() => {
     async function loadData() {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
+      const res = await fetch('/api/auth/session');
+      if (!res.ok) {
         router.push('/login');
         return;
       }
 
-      // Datos del usuario
-      const { data: userData } = await supabase
-        .from('users')
-        .select('email, full_name')
-        .eq('email', session.user.email)
-        .single();
+      const { user: sessionUser } = await res.json();
 
-      setUser(userData ?? { email: session.user.email!, full_name: session.user.email!.split('@')[0] });
+      setUser({ email: sessionUser.email, full_name: sessionUser.full_name });
 
       // Préstamos guardados en localStorage
       const saved = localStorage.getItem('sr_loans');
@@ -63,7 +56,7 @@ export default function PassportPage() {
 
       // Badges reclamados por este usuario
       const allClaims: Record<string, ClaimRecord[]> = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '{}');
-      const userEmail = session.user.email?.toLowerCase() ?? '';
+      const userEmail = sessionUser.email?.toLowerCase() ?? '';
       setBadges(allClaims[userEmail] ?? []);
 
       setLoading(false);
