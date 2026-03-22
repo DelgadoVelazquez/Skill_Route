@@ -40,22 +40,18 @@ export default function CrearBadgePage() {
     e.preventDefault();
     setLoading(true);
 
-    // Generar código único
-    const code = 'BADGE-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+    const code     = 'BADGE-' + Math.random().toString(36).substring(2, 8).toUpperCase();
     const claimUrl = `${window.location.origin}/claim_badge?code=${code}`;
 
-    const badge: CreatedBadge = {
-      code,
-      title,
-      issuer,
-      event,
-      description,
-      imageUrl,
+    const session = JSON.parse(localStorage.getItem('sr_org_session') ?? '{}');
+
+    const badge = {
+      code, title, issuer, event, description, imageUrl,
       createdAt: new Date().toISOString(),
       claimUrl,
+      institucionEmail: session.email ?? '',
     };
 
-    // Guardar en localStorage
     const existing = JSON.parse(localStorage.getItem('sr_badges_created') ?? '[]');
     localStorage.setItem('sr_badges_created', JSON.stringify([...existing, badge]));
 

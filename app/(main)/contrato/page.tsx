@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ContractResult {
   txid: string;
@@ -28,15 +28,32 @@ interface PaymentResult {
   sanction: { type: string; action: string; severity: string } | null;
 }
 
-const DEMO_PROGRAMS = [
-  { name: 'Maestría en Inteligencia Artificial', institution: 'UNAM', cost: 80000, duration: 24 },
-  { name: 'Maestría en Educación', institution: 'IPN', cost: 50000, duration: 24 },
-  { name: 'Diplomado en Data Science', institution: 'TEC de Monterrey', cost: 25000, duration: 6 },
-  { name: 'Certificado en Blockchain', institution: 'UDEM', cost: 15000, duration: 3 },
-];
+interface Programa {
+  name: string;
+  institution: string;
+  cost: number;
+  duration: number;
+}
 
 export default function ContratoPage() {
+  const [programs, setPrograms] = useState<Programa[]>([]);
   const [selected, setSelected] = useState(0);
+
+  useEffect(() => {
+    const raw = JSON.parse(localStorage.getItem('sr_programas') ?? '[]');
+    const mapped: Programa[] = raw.map((p: Record<string, unknown>) => ({
+      name:        (p.nombre as string) ?? 'Sin nombre',
+      institution: (p.institucion as string) ?? '',
+      cost:        Number(p.costo) || 0,
+      duration:    parseInt(p.duracion as string) || 12,
+    }));
+    setPrograms(mapped);
+
+    try {
+      const sess = JSON.parse(localStorage.getItem('sr_user_session') ?? 'null');
+      if (sess?.stellar_public_key) setBorrower(sess.stellar_public_key);
+    } catch { /* no session */ }
+  }, []);
   const [borrower, setBorrower] = useState('GAZMSTBJCRNWVLRP3KZS6EIC3ZTS3O3N25VTYSINNC2UB6VBRNN2PG3U');
   const [loading, setLoading] = useState(false);
   const [contract, setContract] = useState<ContractResult | null>(null);
@@ -44,11 +61,11 @@ export default function ContratoPage() {
   const [payResult, setPayResult] = useState<PaymentResult | null>(null);
   const [missedSim, setMissedSim] = useState(0);
 
-  const prog = DEMO_PROGRAMS[selected];
-  const deposit = Math.round(prog.cost * 0.10);
-  const loan = prog.cost - deposit;
-  const term = prog.duration + 6;
-  const monthly = Math.round(loan / term);
+  const prog = programs[selected];
+  const deposit = prog ? Math.round(prog.cost * 0.10) : 0;
+  const loan = prog ? prog.cost - deposit : 0;
+  const term = prog ? prog.duration + 6 : 0;
+  const monthly = term > 0 ? Math.round(loan / term) : 0;
 
   async function handleCreateContract() {
     setLoading(true);
@@ -126,72 +143,82 @@ export default function ContratoPage() {
           <h2 style={{ margin: '0 0 16px', fontSize: 18, fontWeight: 700, color: '#111827' }}>
             1. Selecciona el programa educativo
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {DEMO_PROGRAMS.map((p, i) => (
-              <button
-                key={i}
-                onClick={() => { setSelected(i); setContract(null); setPayResult(null); }}
-                style={{
-                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
-                  border: selected === i ? '2px solid #2d4fae' : '1px solid #e5e7eb',
-                  background: selected === i ? '#f0f4ff' : 'white',
-                  transition: '0.2s',
-                }}
-              >
-                <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 14, color: '#111827' }}>{p.name}</p>
-                <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{p.institution} · ${p.cost.toLocaleString('es-MX')} MXN · {p.duration} meses</p>
-              </button>
-            ))}
-          </div>
-
-          {/* Resumen de condiciones */}
-          <div style={{ marginTop: 20, background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: '#374151' }}>
-              Cláusulas del contrato
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {[
-                { label: 'Programa', value: prog.name },
-                { label: 'Institución', value: prog.institution },
-                { label: 'Costo total', value: `$${prog.cost.toLocaleString('es-MX')} MXN` },
-                { label: 'Depósito (10%)', value: `$${deposit.toLocaleString('es-MX')} MXN` },
-                { label: 'Monto del préstamo', value: `$${loan.toLocaleString('es-MX')} MXN` },
-                { label: 'Plazo de pago', value: `${term} meses (${prog.duration}m + 6 gracia)` },
-                { label: 'Cuota mensual', value: `$${monthly.toLocaleString('es-MX')} MXN/mes` },
-                { label: 'Interés por mora', value: '10% sobre cuota vencida' },
-                { label: '1er incumplimiento', value: 'Cargo 10% + descuento depósito' },
-                { label: '2+ incumplimientos', value: 'Ejecución fianza + Boletín Moroso' },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
-                  <span style={{ fontSize: 13, color: '#1f2937', fontWeight: 600 }}>{value}</span>
-                </div>
+          {programs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: '#9ca3af' }}>
+              <div style={{ fontSize: 36, marginBottom: 10 }}>📭</div>
+              <p style={{ fontWeight: 700, color: '#374151', margin: '0 0 4px' }}>Sin programas disponibles</p>
+              <p style={{ fontSize: 13, margin: 0 }}>Las fondeadoras aún no han publicado programas.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {programs.map((p, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setSelected(i); setContract(null); setPayResult(null); }}
+                  style={{
+                    padding: '14px 16px', borderRadius: 12, cursor: 'pointer', textAlign: 'left',
+                    border: selected === i ? '2px solid #2d4fae' : '1px solid #e5e7eb',
+                    background: selected === i ? '#f0f4ff' : 'white',
+                    transition: '0.2s',
+                  }}
+                >
+                  <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: 14, color: '#111827' }}>{p.name}</p>
+                  <p style={{ margin: 0, fontSize: 12, color: '#6b7280' }}>{p.institution} · ${p.cost.toLocaleString('es-MX')} MXN · {p.duration} meses</p>
+                </button>
               ))}
             </div>
-          </div>
+          )}
 
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
-              Wallet Stellar del postulante (borrowerAddress)
-            </label>
-            <input
-              value={borrower}
-              onChange={e => setBorrower(e.target.value)}
-              style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 10, padding: '0 12px', fontSize: 13, fontFamily: 'monospace', boxSizing: 'border-box' }}
-            />
-          </div>
+          {/* Resumen de condiciones */}
+          {prog && <>
+            <div style={{ marginTop: 20, background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb' }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: '#374151' }}>
+                Cláusulas del contrato
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {[
+                  { label: 'Programa', value: prog.name },
+                  { label: 'Institución', value: prog.institution },
+                  { label: 'Costo total', value: `$${prog.cost.toLocaleString('es-MX')} MXN` },
+                  { label: 'Depósito (10%)', value: `$${deposit.toLocaleString('es-MX')} MXN` },
+                  { label: 'Monto del préstamo', value: `$${loan.toLocaleString('es-MX')} MXN` },
+                  { label: 'Plazo de pago', value: `${term} meses (${prog.duration}m + 6 gracia)` },
+                  { label: 'Cuota mensual', value: `$${monthly.toLocaleString('es-MX')} MXN/mes` },
+                  { label: 'Interés por mora', value: '10% sobre cuota vencida' },
+                  { label: '1er incumplimiento', value: 'Cargo 10% + descuento depósito' },
+                  { label: '2+ incumplimientos', value: 'Ejecución fianza + Boletín Moroso' },
+                ].map(({ label, value }) => (
+                  <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 11, color: '#9ca3af', fontWeight: 700, letterSpacing: '0.5px' }}>{label.toUpperCase()}</span>
+                    <span style={{ fontSize: 13, color: '#1f2937', fontWeight: 600 }}>{value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <button
-            onClick={handleCreateContract}
-            disabled={loading}
-            style={{
-              marginTop: 16, width: '100%', height: 48, borderRadius: 12, border: 'none',
-              background: loading ? '#9ca3af' : '#112a68', color: 'white',
-              fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {loading ? '⏳ Firmando en Stellar...' : '⛓️ Crear Smart Contract en Testnet'}
-          </button>
+            <div style={{ marginTop: 16 }}>
+              <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
+                Wallet Stellar del postulante (borrowerAddress)
+              </label>
+              <input
+                value={borrower}
+                onChange={e => setBorrower(e.target.value)}
+                style={{ width: '100%', height: 40, border: '1px solid #d1d5db', borderRadius: 10, padding: '0 12px', fontSize: 13, fontFamily: 'monospace', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <button
+              onClick={handleCreateContract}
+              disabled={loading}
+              style={{
+                marginTop: 16, width: '100%', height: 48, borderRadius: 12, border: 'none',
+                background: loading ? '#9ca3af' : '#112a68', color: 'white',
+                fontSize: 16, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {loading ? '⏳ Firmando en Stellar...' : '⛓️ Crear Smart Contract en Testnet'}
+            </button>
+          </>}
         </div>
 
         {/* Resultado del contrato */}

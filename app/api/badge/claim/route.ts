@@ -1,33 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
 import { issueBadgeSBT } from '@/lib/stellar';
+import { db as supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, badgeCode } = await req.json();
+    const { email, badgeCode, title } = await req.json();
 
     if (!email || !badgeCode) {
       return NextResponse.json({ error: 'email y badgeCode son requeridos' }, { status: 400 });
     }
 
-    // Obtener la wallet del usuario desde MySQL
-    const [rows] = await pool.query(
-      'SELECT stellar_public_key FROM users WHERE email = ?',
-      [email.toLowerCase().trim()]
-    ) as any[];
+    // Obtener la wallet del usuario desde Supabase
+    const { data: userData, error: userError } = await supabaseAdmin
+      .from('users')
+      .select('stellar_public_key')
+      .eq('email', email.toLowerCase())
+      .single();
 
-    const user = rows[0];
-
-    if (!user?.stellar_public_key) {
+    if (userError || !userData?.stellar_public_key) {
       return NextResponse.json(
         { error: 'Usuario sin wallet Stellar. Vuelve a registrarte.' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
+    // Emitir el badge SBT en Stellar (firmado por el issuer de la plataforma)
     const result = await issueBadgeSBT({
       badgeCode: badgeCode.slice(0, 12).replace(/[^A-Z0-9]/gi, 'X'),
-      recipientAddress: user.stellar_public_key,
+      recipientAddress: userData.stellar_public_key,
       missedPayments: 0,
     });
 
@@ -36,9 +36,10 @@ export async function POST(req: NextRequest) {
     }
 
     const explorerUrl = `https://stellar.expert/explorer/testnet/tx/${result.txid}`;
+
     return NextResponse.json({ success: true, txid: result.txid, explorerUrl });
   } catch (err) {
-    console.error('[badge/claim]', err);
+    console.error('Error emitiendo badge SBT:', err);
     return NextResponse.json({ error: 'Error al emitir badge en Stellar' }, { status: 500 });
   }
 }

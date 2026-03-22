@@ -10,27 +10,32 @@ export default function LoginPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
-  async function handleLogin(e: React.FormEvent) {
+  function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    const accounts: { email: string; fullName: string; password: string; stellarPublicKey: string }[] =
+      JSON.parse(localStorage.getItem('sr_user_accounts') ?? '[]');
 
-    const data = await res.json();
+    const match = accounts.find(
+      a => a.email === email.toLowerCase() && a.password === password,
+    );
 
-    if (!res.ok) {
-      setError(data.error ?? 'Correo o contraseña incorrectos.');
-    } else {
-      // Redirigir según rol
-      if (data.role === 'fondeadora') router.push('/fondeadora/dashboard');
-      else if (data.role === 'institucion') router.push('/badge/crear');
-      else router.push('/passport');
+    if (!match) {
+      setError('Correo o contraseña incorrectos.');
+      setLoading(false);
+      return;
     }
+
+    localStorage.setItem('sr_user_session', JSON.stringify({
+      email:            match.email,
+      fullName:         match.fullName,
+      stellarPublicKey: match.stellarPublicKey,
+      role:             'usuario',
+    }));
+
+    router.push('/passport');
     setLoading(false);
   }
 
@@ -48,26 +53,14 @@ export default function LoginPage() {
           <form className="login-form" onSubmit={handleLogin}>
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Ingresa tu correo"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <input id="email" type="text" placeholder="Ingresa tu correo"
+                value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
 
             <div className="form-group">
               <label htmlFor="password">Contraseña</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Ingresa tu contraseña"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
+              <input id="password" type="password" placeholder="Ingresa tu contraseña"
+                value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
 
             {error && (

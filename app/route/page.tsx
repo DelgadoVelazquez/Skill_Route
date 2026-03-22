@@ -77,12 +77,6 @@ export default function RoutePage() {
           }}>
             Ver programas disponibles →
           </Link>
-          <Link href="/passport/login" style={{
-            padding: '12px 28px', borderRadius: 10, border: '2px solid rgba(255,255,255,0.4)',
-            color: 'white', fontWeight: 700, fontSize: 15, textDecoration: 'none',
-          }}>
-            Conectar Passport
-          </Link>
         </div>
       </div>
 
@@ -199,12 +193,6 @@ export default function RoutePage() {
               fontWeight: 700, fontSize: 15, textDecoration: 'none',
             }}>
               Ver programas →
-            </Link>
-            <Link href="/passport/login" style={{
-              padding: '12px 28px', borderRadius: 10, border: '2px solid rgba(255,255,255,0.3)',
-              color: 'white', fontWeight: 700, fontSize: 15, textDecoration: 'none',
-            }}>
-              Conectar con Stellar
             </Link>
           </div>
         </div>

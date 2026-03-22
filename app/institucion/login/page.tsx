@@ -11,76 +11,53 @@ export default function InstitucionLoginPage() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState('');
 
-  async function handleLogin(e: React.SyntheticEvent<HTMLFormElement>) {
+  function handleLogin(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
+    const accounts: { name: string; email: string; password: string }[] =
+      JSON.parse(localStorage.getItem('sr_institucion_accounts') ?? '[]');
 
-    if (!res.ok) {
-      setError(data.error ?? 'Correo o contraseña incorrectos.');
-    } else {
-      router.push('/badge/crear');
+    const match = accounts.find(a => a.email === email.toLowerCase() && a.password === password);
+
+    if (!match) {
+      setError('Correo o contraseña incorrectos.');
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    localStorage.setItem('sr_org_session', JSON.stringify({ email: match.email, name: match.name, role: 'institucion' }));
+    router.push('/institucion/dashboard');
   }
 
   return (
-    <main style={styles.page}>
-      <div style={styles.card}>
-
-        <div style={styles.header}>
-          <div style={styles.avatarRing}>
-            <span style={{ fontSize: 34 }}>🏛️</span>
-          </div>
-          <h1 style={styles.title}>Instituciones</h1>
-          <p style={styles.subtitle}>Accede para emitir badges verificables</p>
+    <main style={s.page}>
+      <div style={s.card}>
+        <div style={s.header}>
+          <div style={s.avatarRing}><span style={{ fontSize: 34 }}>🏛️</span></div>
+          <h1 style={s.title}>Instituciones</h1>
+          <p style={s.subtitle}>Accede para emitir badges verificables</p>
         </div>
-
-        <div style={styles.body}>
-          <form onSubmit={handleLogin} style={styles.form}>
-
-            <div style={styles.group}>
-              <label style={styles.label}>CORREO INSTITUCIONAL</label>
-              <input
-                type="email"
-                placeholder="contacto@institucion.edu"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-                style={styles.input}
-              />
+        <div style={s.body}>
+          <form onSubmit={handleLogin} style={s.form}>
+            <div style={s.group}>
+              <label style={s.label}>CORREO INSTITUCIONAL</label>
+              <input type="text" placeholder="contacto@institucion.edu"
+                value={email} onChange={e => setEmail(e.target.value)} required style={s.input} />
             </div>
-
-            <div style={styles.group}>
-              <label style={styles.label}>CONTRASEÑA</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                style={styles.input}
-              />
+            <div style={s.group}>
+              <label style={s.label}>CONTRASEÑA</label>
+              <input type="password" placeholder="••••••••"
+                value={password} onChange={e => setPassword(e.target.value)} required style={s.input} />
             </div>
-
-            {error && <p style={styles.error}>{error}</p>}
-
-            <button type="submit" disabled={loading} style={styles.btn}>
+            {error && <p style={s.error}>{error}</p>}
+            <button type="submit" disabled={loading} style={s.btn}>
               {loading ? 'Ingresando...' : 'Acceder'}
             </button>
-
-            <div style={styles.links}>
-              <Link href="/institucion/register" style={styles.link}>
-                ¿Primera vez? Registrar institución →
-              </Link>
-              <Link href="/" style={styles.linkSecondary}>← Volver al inicio</Link>
+            <div style={s.links}>
+              <Link href="/institucion/register" style={s.link}>¿Primera vez? Registrar institución →</Link>
+              <Link href="/" style={s.linkSecondary}>← Volver al inicio</Link>
             </div>
           </form>
         </div>
@@ -89,47 +66,22 @@ export default function InstitucionLoginPage() {
   );
 }
 
-const COLOR = '#7c3aed';
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', padding: 24, background: '#06060f',
-  },
-  card: {
-    width: '100%', maxWidth: 440, background: '#0e0e20',
-    borderRadius: 20, overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.08)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-  },
-  header: {
-    background: `linear-gradient(160deg, ${COLOR} 0%, #1A1B5E 100%)`,
-    padding: '36px 24px 32px', textAlign: 'center', color: 'white',
-  },
-  avatarRing: {
-    width: 80, height: 80, borderRadius: '50%', margin: '0 auto 18px',
-    background: 'rgba(255,255,255,0.12)', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    border: '2px solid rgba(255,255,255,0.2)',
-  },
-  title: { margin: '0 0 6px', fontSize: 24, fontWeight: 800 },
-  subtitle: { margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  body: { padding: '28px 32px 32px' },
-  form: { display: 'flex', flexDirection: 'column', gap: 16 },
-  group: { display: 'flex', flexDirection: 'column', gap: 7 },
-  label: { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: COLOR },
-  input: {
-    height: 44, background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
-    padding: '0 14px', fontSize: 14, color: 'white', outline: 'none',
-  },
-  error: { margin: 0, fontSize: 13, color: '#f87171', textAlign: 'center' },
-  btn: {
-    height: 48, borderRadius: 12, border: 'none',
-    background: COLOR, color: 'white', fontSize: 15,
-    fontWeight: 700, cursor: 'pointer',
-  },
-  links: { display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', marginTop: 4 },
-  link: { fontSize: 13, color: COLOR, textDecoration: 'none', fontWeight: 600 },
+const C = '#7c3aed';
+const s: Record<string, React.CSSProperties> = {
+  page:          { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#06060f' },
+  card:          { width: '100%', maxWidth: 440, background: '#0e0e20', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' },
+  header:        { background: `linear-gradient(160deg, ${C} 0%, #1A1B5E 100%)`, padding: '36px 24px 32px', textAlign: 'center', color: 'white' },
+  avatarRing:    { width: 80, height: 80, borderRadius: '50%', margin: '0 auto 18px', background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.2)' },
+  title:         { margin: '0 0 6px', fontSize: 24, fontWeight: 800 },
+  subtitle:      { margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  body:          { padding: '28px 32px 32px' },
+  form:          { display: 'flex', flexDirection: 'column', gap: 16 },
+  group:         { display: 'flex', flexDirection: 'column', gap: 7 },
+  label:         { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C },
+  input:         { height: 44, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0 14px', fontSize: 14, color: 'white', outline: 'none' },
+  error:         { margin: 0, fontSize: 13, color: '#f87171', textAlign: 'center' },
+  btn:           { height: 48, borderRadius: 12, border: 'none', background: C, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer' },
+  links:         { display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center', marginTop: 4 },
+  link:          { fontSize: 13, color: C, textDecoration: 'none', fontWeight: 600 },
   linkSecondary: { fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' },
 };

@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
-const PROGRAMAS: Record<string, { nombre: string; institucion: string; costo: number; duracionMeses: number; requisito: string; icon: string }> = {
-  '1': { nombre: 'Maestría en Inteligencia Artificial', institucion: 'UNAM',        costo: 80000, duracionMeses: 24, requisito: 'Licenciatura', icon: '🤖' },
-  '2': { nombre: 'Maestría en Educación',               institucion: 'IPN',         costo: 50000, duracionMeses: 24, requisito: 'Licenciatura', icon: '📚' },
-  '3': { nombre: 'Diplomado en Data Science',           institucion: 'TEC',         costo: 25000, duracionMeses: 6,  requisito: 'Preparatoria', icon: '📊' },
-  '4': { nombre: 'Certificado en Blockchain y Web3',    institucion: 'UDEM',        costo: 15000, duracionMeses: 3,  requisito: 'Preparatoria', icon: '⛓️' },
-  '5': { nombre: 'Maestría en Finanzas Digitales',      institucion: 'ITAM',        costo: 95000, duracionMeses: 24, requisito: 'Licenciatura', icon: '💹' },
-  '6': { nombre: 'Diplomado en Ciberseguridad',         institucion: 'UNAM',        costo: 30000, duracionMeses: 8,  requisito: 'Preparatoria', icon: '🔐' },
+interface Programa {
+  nombre: string;
+  institucion: string;
+  costo: number;
+  duracionMeses: number;
+  requisito: string;
+  icon: string;
+}
+
+const STATIC: Record<string, Programa> = {
+  '1': { nombre: 'Maestría en Inteligencia Artificial', institucion: 'UNAM', costo: 80000, duracionMeses: 24, requisito: 'Licenciatura', icon: '🤖' },
+  '2': { nombre: 'Maestría en Educación',               institucion: 'IPN',  costo: 50000, duracionMeses: 24, requisito: 'Licenciatura', icon: '📚' },
+  '3': { nombre: 'Diplomado en Data Science',           institucion: 'TEC',  costo: 25000, duracionMeses: 6,  requisito: 'Preparatoria', icon: '📊' },
+  '4': { nombre: 'Certificado en Blockchain y Web3',    institucion: 'UDEM', costo: 15000, duracionMeses: 3,  requisito: 'Preparatoria', icon: '⛓️' },
+  '5': { nombre: 'Maestría en Finanzas Digitales',      institucion: 'ITAM', costo: 95000, duracionMeses: 24, requisito: 'Licenciatura', icon: '💹' },
+  '6': { nombre: 'Diplomado en Ciberseguridad',         institucion: 'UNAM', costo: 30000, duracionMeses: 8,  requisito: 'Preparatoria', icon: '🔐' },
 };
 
 type Step = 'prevalidacion' | 'garantia' | 'contrato' | 'confirmado';
@@ -18,32 +27,54 @@ type Step = 'prevalidacion' | 'garantia' | 'contrato' | 'confirmado';
 export default function SolicitudPage() {
   const params = useParams();
   const id = params.id as string;
-  const p = PROGRAMAS[id] ?? PROGRAMAS['1'];
 
-  const deposito   = Math.round(p.costo * 0.10);
-  const prestamo   = p.costo - deposito;
-  const termMeses  = p.duracionMeses + 6;
-  const cuota      = Math.round(prestamo / termMeses);
+  const [p, setP]           = useState<Programa | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
-  const [step, setStep]           = useState<Step>('prevalidacion');
+  useEffect(() => {
+    if (STATIC[id]) { setP(STATIC[id]); return; }
+    const dinamicos = JSON.parse(localStorage.getItem('sr_programas') ?? '[]');
+    const found = dinamicos.find((x: { id: string }) => x.id === id);
+    if (!found) { setNotFound(true); return; }
+    setP({
+      nombre:       found.nombre      ?? 'Sin nombre',
+      institucion:  found.institucion ?? '',
+      costo:        Number(found.costo) || 0,
+      duracionMeses: parseInt(found.duracion) || 12,
+      requisito:    found.requisito   ?? 'Preparatoria',
+      icon:         found.icon        ?? '🎓',
+    });
+
+    // Pre-fill wallet from session
+    try {
+      const sess = JSON.parse(localStorage.getItem('sr_user_session') ?? 'null');
+      if (sess?.stellar_public_key) setWallet(sess.stellar_public_key);
+    } catch { /* no session */ }
+  }, [id]);
+
+  const deposito  = p ? Math.round(p.costo * 0.10) : 0;
+  const prestamo  = p ? p.costo - deposito : 0;
+  const termMeses = p ? p.duracionMeses + 6 : 0;
+  const cuota     = termMeses > 0 ? Math.round(prestamo / termMeses) : 0;
+
+  const [step, setStep]             = useState<Step>('prevalidacion');
   const [validating, setValidating] = useState(false);
   const [validated, setValidated]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [txid, setTxid]             = useState('');
   const [explorerUrl, setExplorerUrl] = useState('');
-
-  // Form state
   const [aval, setAval]   = useState({ nombre: '', rfc: '', relacion: '' });
   const [wallet, setWallet] = useState('GAZMSTBJCRNWVLRP3KZS6EIC3ZTS3O3N25VTYSINNC2UB6VBRNN2PG3U');
 
   async function handlePrevalidar() {
     setValidating(true);
-    await new Promise(r => setTimeout(r, 2000)); // simula consulta a Passport Pro
+    await new Promise(r => setTimeout(r, 2000));
     setValidating(false);
     setValidated(true);
   }
 
   async function handleCrearContrato() {
+    if (!p) return;
     setSubmitting(true);
     try {
       const res = await fetch('/api/loan/contract', {
@@ -51,19 +82,17 @@ export default function SolicitudPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           borrowerAddress: wallet,
-          programName:     p.nombre,
-          institution:     p.institucion,
-          totalCost:       p.costo,
-          depositAmount:   deposito,
-          durationMonths:  p.duracionMeses,
+          programName:    p.nombre,
+          institution:    p.institucion,
+          totalCost:      p.costo,
+          depositAmount:  deposito,
+          durationMonths: p.duracionMeses,
         }),
       });
       const data = await res.json();
       if (data.success) {
         setTxid(data.txid);
         setExplorerUrl(data.explorerUrl);
-
-        // Guardar préstamo en localStorage para mostrarlo en el Passport
         const newLoan = {
           id: data.txid,
           program: p.nombre,
@@ -79,7 +108,6 @@ export default function SolicitudPage() {
         };
         const existing = JSON.parse(localStorage.getItem('sr_loans') ?? '[]');
         localStorage.setItem('sr_loans', JSON.stringify([...existing, newLoan]));
-
         setStep('confirmado');
       } else {
         alert('Error al crear contrato: ' + data.error);
@@ -96,6 +124,22 @@ export default function SolicitudPage() {
     { key: 'confirmado',    label: 'Confirmado' },
   ];
   const stepIndex = STEPS.findIndex(s => s.key === step);
+
+  if (notFound) return (
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef1f6' }}>
+      <div style={{ textAlign: 'center' }}>
+        <p style={{ fontSize: 40 }}>🔍</p>
+        <p style={{ fontSize: 18, fontWeight: 700 }}>Programa no encontrado</p>
+        <Link href="/programas" style={{ color: '#2d4fae', fontWeight: 600 }}>← Volver al catálogo</Link>
+      </div>
+    </main>
+  );
+
+  if (!p) return (
+    <main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#eef1f6' }}>
+      <p style={{ color: '#6b7280' }}>Cargando...</p>
+    </main>
+  );
 
   return (
     <main style={{ minHeight: '100vh', background: '#eef1f6', paddingBottom: 60 }}>
@@ -187,12 +231,8 @@ export default function SolicitudPage() {
               ) : (
                 <div>
                   <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 14, marginBottom: 16, textAlign: 'center' }}>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#16a34a', fontSize: 15 }}>
-                      ✅ Pre-validación aprobada
-                    </p>
-                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>
-                      Cumples todos los requisitos para el programa
-                    </p>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#16a34a', fontSize: 15 }}>✅ Pre-validación aprobada</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13, color: '#6b7280' }}>Cumples todos los requisitos para el programa</p>
                   </div>
                   <button
                     onClick={() => setStep('garantia')}
@@ -212,11 +252,13 @@ export default function SolicitudPage() {
               <h3 style={{ margin: '0 0 14px', fontSize: 16, fontWeight: 700, color: '#111827' }}>Resumen del préstamo</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
-                  { label: 'Costo total', value: `$${p.costo.toLocaleString()} MXN` },
-                  { label: 'Depósito inicial (10%)', value: `$${deposito.toLocaleString()} MXN` },
-                  { label: 'Monto del préstamo', value: `$${prestamo.toLocaleString()} MXN`, bold: true },
-                  { label: 'Plazo', value: `${termMeses} meses` },
-                  { label: 'Cuota mensual', value: `$${cuota.toLocaleString()} MXN/mes`, bold: true },
+                  { label: 'Programa',              value: p.nombre },
+                  { label: 'Institución',            value: p.institucion },
+                  { label: 'Costo total',            value: `$${p.costo.toLocaleString('es-MX')} MXN` },
+                  { label: 'Depósito inicial (10%)', value: `$${deposito.toLocaleString('es-MX')} MXN` },
+                  { label: 'Monto del préstamo',     value: `$${prestamo.toLocaleString('es-MX')} MXN`, bold: true },
+                  { label: 'Plazo',                  value: `${termMeses} meses` },
+                  { label: 'Cuota mensual',          value: `$${cuota.toLocaleString('es-MX')} MXN/mes`, bold: true },
                 ].map(({ label, value, bold }) => (
                   <div key={label} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid #f3f4f6' }}>
                     <span style={{ fontSize: 14, color: '#6b7280' }}>{label}</span>
@@ -237,15 +279,12 @@ export default function SolicitudPage() {
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-              {/* Depósito */}
               <div style={{ background: '#f0f4ff', borderRadius: 12, padding: 16, border: '1px solid #dbe6ff' }}>
                 <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 700, color: '#2d4fae' }}>💰 Depósito inicial requerido</p>
-                <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#112a68' }}>${deposito.toLocaleString()} MXN</p>
+                <p style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#112a68' }}>${deposito.toLocaleString('es-MX')} MXN</p>
                 <p style={{ margin: '4px 0 0', fontSize: 12, color: '#6b7280' }}>Reserva de emergencia ante primer incumplimiento</p>
               </div>
 
-              {/* Wallet */}
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 700, color: '#374151', marginBottom: 6 }}>
                   Tu wallet Stellar (Passport Pro)
@@ -257,7 +296,6 @@ export default function SolicitudPage() {
                 />
               </div>
 
-              {/* Datos del aval */}
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: 16 }}>
                 <p style={{ margin: '0 0 14px', fontSize: 14, fontWeight: 700, color: '#374151' }}>Datos del Aval</p>
                 {[
@@ -277,7 +315,6 @@ export default function SolicitudPage() {
                 ))}
               </div>
 
-              {/* Documentos */}
               <div style={{ background: '#f8fafc', borderRadius: 12, padding: 14, border: '1px solid #e5e7eb' }}>
                 <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: '#374151' }}>📎 Documentos requeridos</p>
                 {['INE vigente del postulante', 'INE vigente del aval', 'Fianza educativa firmada'].map(doc => (
@@ -317,17 +354,17 @@ export default function SolicitudPage() {
             <div style={{ background: '#f8fafc', borderRadius: 12, padding: 16, border: '1px solid #e5e7eb', marginBottom: 16 }}>
               <p style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 700, color: '#374151' }}>⛓️ Cláusulas del contrato on-chain</p>
               {[
-                { label: 'Programa', value: p.nombre },
-                { label: 'Institución', value: p.institucion },
+                { label: 'Programa',           value: p.nombre },
+                { label: 'Institución',         value: p.institucion },
                 { label: 'Postulante (wallet)', value: wallet.slice(0, 12) + '...' + wallet.slice(-6) },
-                { label: 'Aval', value: aval.nombre || 'No especificado' },
-                { label: 'Costo total', value: `$${p.costo.toLocaleString()} MXN` },
-                { label: 'Depósito inicial', value: `$${deposito.toLocaleString()} MXN` },
-                { label: 'Monto del préstamo', value: `$${prestamo.toLocaleString()} MXN` },
-                { label: 'Plazo de pago', value: `${termMeses} meses` },
-                { label: 'Cuota mensual', value: `$${cuota.toLocaleString()} MXN` },
-                { label: 'Interés por mora', value: '10% sobre cuota vencida' },
-                { label: 'Red blockchain', value: 'Stellar Testnet' },
+                { label: 'Aval',               value: aval.nombre || 'No especificado' },
+                { label: 'Costo total',         value: `$${p.costo.toLocaleString('es-MX')} MXN` },
+                { label: 'Depósito inicial',    value: `$${deposito.toLocaleString('es-MX')} MXN` },
+                { label: 'Monto del préstamo',  value: `$${prestamo.toLocaleString('es-MX')} MXN` },
+                { label: 'Plazo de pago',       value: `${termMeses} meses` },
+                { label: 'Cuota mensual',       value: `$${cuota.toLocaleString('es-MX')} MXN` },
+                { label: 'Interés por mora',    value: '10% sobre cuota vencida' },
+                { label: 'Red blockchain',      value: 'Stellar Testnet' },
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
                   <span style={{ fontSize: 13, color: '#6b7280' }}>{label}</span>
@@ -365,6 +402,7 @@ export default function SolicitudPage() {
           <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 2px 12px rgba(0,0,0,0.07)', textAlign: 'center' }}>
             <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
             <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#111827' }}>¡Préstamo aprobado!</h2>
+            <p style={{ margin: '0 0 8px', fontSize: 16, fontWeight: 600, color: '#374151' }}>{p.nombre}</p>
             <p style={{ margin: '0 0 20px', fontSize: 15, color: '#6b7280' }}>
               Tu contrato ha sido registrado en Stellar Blockchain. La universidad ha sido notificada para procesar tu inscripción.
             </p>

@@ -6,79 +6,68 @@ import Link from 'next/link';
 
 export default function InstitucionRegisterPage() {
   const router = useRouter();
-  const [name, setName]             = useState('');
-  const [email, setEmail]           = useState('');
-  const [password, setPassword]     = useState('');
-  const [confirm, setConfirm]       = useState('');
-  const [loading, setLoading]       = useState(false);
-  const [error, setError]           = useState('');
+  const [name, setName]         = useState('');
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm]   = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState('');
 
-  async function handleRegister(e: React.SyntheticEvent<HTMLFormElement>) {
+  function handleRegister(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
-    if (password !== confirm) { setError('Las contraseñas no coinciden.'); return; }
+
+    if (!email.includes('@'))   { setError('Ingresa un correo válido.'); return; }
+    if (password !== confirm)   { setError('Las contraseñas no coinciden.'); return; }
+    if (password.length < 4)    { setError('Contraseña mínimo 4 caracteres.'); return; }
+
     setLoading(true);
 
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName: name, role: 'institucion' }),
-    });
-    const data = await res.json();
+    const accounts: { name: string; email: string; password: string }[] =
+      JSON.parse(localStorage.getItem('sr_institucion_accounts') ?? '[]');
 
-    if (!res.ok) {
-      setError(data.error ?? 'Error al crear la cuenta.');
-    } else {
-      router.push('/badge/crear');
+    if (accounts.some(a => a.email === email.toLowerCase())) {
+      setError('Este correo ya está registrado.');
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    accounts.push({ name, email: email.toLowerCase(), password });
+    localStorage.setItem('sr_institucion_accounts', JSON.stringify(accounts));
+    localStorage.setItem('sr_org_session', JSON.stringify({ email: email.toLowerCase(), name, role: 'institucion' }));
+
+    router.push('/institucion/dashboard');
   }
 
   return (
-    <main style={styles.page}>
-      <div style={styles.card}>
-
-        <div style={styles.header}>
-          <div style={styles.avatarRing}>
-            <span style={{ fontSize: 34 }}>🏛️</span>
-          </div>
-          <h1 style={styles.title}>Registrar institución</h1>
-          <p style={styles.subtitle}>Crea tu cuenta para emitir badges verificables</p>
+    <main style={s.page}>
+      <div style={s.card}>
+        <div style={s.header}>
+          <div style={s.avatarRing}><span style={{ fontSize: 34 }}>🏛️</span></div>
+          <h1 style={s.title}>Registrar institución</h1>
+          <p style={s.subtitle}>Crea tu cuenta para emitir badges verificables</p>
         </div>
-
-        <div style={styles.body}>
-          <form onSubmit={handleRegister} style={styles.form}>
-
+        <div style={s.body}>
+          <form onSubmit={handleRegister} style={s.form}>
             {[
               { label: 'NOMBRE DE LA INSTITUCIÓN', value: name,     set: setName,     type: 'text',     ph: 'TechSummit México' },
-              { label: 'CORREO INSTITUCIONAL',      value: email,    set: setEmail,    type: 'email',    ph: 'contacto@institucion.edu' },
+              { label: 'CORREO INSTITUCIONAL',      value: email,    set: setEmail,    type: 'text',     ph: 'contacto@institucion.edu' },
               { label: 'CONTRASEÑA',                value: password, set: setPassword, type: 'password', ph: '••••••••' },
               { label: 'CONFIRMAR CONTRASEÑA',      value: confirm,  set: setConfirm,  type: 'password', ph: '••••••••' },
             ].map(({ label, value, set, type, ph }) => (
-              <div key={label} style={styles.group}>
-                <label style={styles.label}>{label}</label>
-                <input
-                  type={type}
-                  placeholder={ph}
-                  value={value}
-                  onChange={e => set(e.target.value)}
-                  required
-                  style={styles.input}
-                />
+              <div key={label} style={s.group}>
+                <label style={s.label}>{label}</label>
+                <input type={type} placeholder={ph} value={value}
+                  onChange={e => set(e.target.value)} required style={s.input} />
               </div>
             ))}
-
-            {error && <p style={styles.error}>{error}</p>}
-
-            <button type="submit" disabled={loading} style={styles.btn}>
-              {loading ? 'Creando cuenta...' : 'Registrar institución'}
+            {error && <p style={s.error}>{error}</p>}
+            <button type="submit" disabled={loading} style={s.btn}>
+              {loading ? 'Registrando...' : 'Registrar institución'}
             </button>
-
-            <div style={styles.links}>
-              <Link href="/institucion/login" style={styles.link}>
-                ¿Ya tienes cuenta? Iniciar sesión
-              </Link>
-              <Link href="/" style={styles.linkSecondary}>← Volver al inicio</Link>
+            <div style={s.links}>
+              <Link href="/institucion/login" style={s.link}>¿Ya tienes cuenta? Iniciar sesión</Link>
+              <Link href="/" style={s.linkSecondary}>← Volver al inicio</Link>
             </div>
           </form>
         </div>
@@ -87,47 +76,22 @@ export default function InstitucionRegisterPage() {
   );
 }
 
-const COLOR = '#7c3aed';
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: '100vh', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', padding: 24, background: '#06060f',
-  },
-  card: {
-    width: '100%', maxWidth: 440, background: '#0e0e20',
-    borderRadius: 20, overflow: 'hidden',
-    border: '1px solid rgba(255,255,255,0.08)',
-    boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
-  },
-  header: {
-    background: `linear-gradient(160deg, ${COLOR} 0%, #1A1B5E 100%)`,
-    padding: '36px 24px 32px', textAlign: 'center', color: 'white',
-  },
-  avatarRing: {
-    width: 80, height: 80, borderRadius: '50%', margin: '0 auto 18px',
-    background: 'rgba(255,255,255,0.12)', display: 'flex',
-    alignItems: 'center', justifyContent: 'center',
-    border: '2px solid rgba(255,255,255,0.2)',
-  },
-  title: { margin: '0 0 6px', fontSize: 24, fontWeight: 800 },
-  subtitle: { margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)' },
-  body: { padding: '28px 32px 32px' },
-  form: { display: 'flex', flexDirection: 'column', gap: 14 },
-  group: { display: 'flex', flexDirection: 'column', gap: 7 },
-  label: { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: COLOR },
-  input: {
-    height: 44, background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10,
-    padding: '0 14px', fontSize: 14, color: 'white', outline: 'none',
-  },
-  error: { margin: 0, fontSize: 13, color: '#f87171', textAlign: 'center' },
-  btn: {
-    height: 48, borderRadius: 12, border: 'none',
-    background: COLOR, color: 'white', fontSize: 15,
-    fontWeight: 700, cursor: 'pointer', marginTop: 4,
-  },
-  links: { display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' },
-  link: { fontSize: 13, color: COLOR, textDecoration: 'none', fontWeight: 600 },
+const C = '#7c3aed';
+const s: Record<string, React.CSSProperties> = {
+  page:          { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: '#06060f' },
+  card:          { width: '100%', maxWidth: 440, background: '#0e0e20', borderRadius: 20, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' },
+  header:        { background: `linear-gradient(160deg, ${C} 0%, #1A1B5E 100%)`, padding: '36px 24px 32px', textAlign: 'center', color: 'white' },
+  avatarRing:    { width: 80, height: 80, borderRadius: '50%', margin: '0 auto 18px', background: 'rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.2)' },
+  title:         { margin: '0 0 6px', fontSize: 24, fontWeight: 800 },
+  subtitle:      { margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)' },
+  body:          { padding: '28px 32px 32px' },
+  form:          { display: 'flex', flexDirection: 'column', gap: 14 },
+  group:         { display: 'flex', flexDirection: 'column', gap: 7 },
+  label:         { fontSize: 11, fontWeight: 700, letterSpacing: 1, color: C },
+  input:         { height: 44, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0 14px', fontSize: 14, color: 'white', outline: 'none' },
+  error:         { margin: 0, fontSize: 13, color: '#f87171', textAlign: 'center' },
+  btn:           { height: 48, borderRadius: 12, border: 'none', background: C, color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', marginTop: 4 },
+  links:         { display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' },
+  link:          { fontSize: 13, color: C, textDecoration: 'none', fontWeight: 600 },
   linkSecondary: { fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'none' },
 };

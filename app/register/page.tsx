@@ -5,38 +5,50 @@ import { useRouter } from 'next/navigation';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [fullName, setFullName]         = useState('');
-  const [email, setEmail]               = useState('');
-  const [password, setPassword]         = useState('');
-  const [confirmPassword, setConfirm]   = useState('');
-  const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState('');
+  const [fullName, setFullName]       = useState('');
+  const [email, setEmail]             = useState('');
+  const [password, setPassword]       = useState('');
+  const [confirmPassword, setConfirm] = useState('');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
 
-  async function handleRegister(e: React.FormEvent) {
+  function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden.');
-      return;
-    }
+    if (!email.includes('@'))          { setError('Ingresa un correo válido.'); return; }
+    if (password !== confirmPassword)  { setError('Las contraseñas no coinciden.'); return; }
+    if (password.length < 4)          { setError('Contraseña mínimo 4 caracteres.'); return; }
 
     setLoading(true);
 
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, fullName }),
-    });
+    const accounts: { email: string; fullName: string; password: string; stellarPublicKey: string }[] =
+      JSON.parse(localStorage.getItem('sr_user_accounts') ?? '[]');
 
-    const json = await res.json();
-
-    if (!res.ok) {
-      setError(json.error ?? 'Error al crear la cuenta.');
-    } else {
-      router.push('/passport');
+    if (accounts.some(a => a.email === email.toLowerCase())) {
+      setError('Este correo ya está registrado.');
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    // Generar wallet Stellar simulada (formato válido de public key)
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const stellarPublicKey = 'G' + Array.from({ length: 55 }, () =>
+      chars[Math.floor(Math.random() * chars.length)]
+    ).join('');
+
+    const newUser = { email: email.toLowerCase(), fullName, password, stellarPublicKey };
+    accounts.push(newUser);
+    localStorage.setItem('sr_user_accounts', JSON.stringify(accounts));
+
+    localStorage.setItem('sr_user_session', JSON.stringify({
+      email:            newUser.email,
+      fullName:         newUser.fullName,
+      stellarPublicKey: newUser.stellarPublicKey,
+      role:             'usuario',
+    }));
+
+    router.push('/passport');
   }
 
   return (
@@ -53,50 +65,26 @@ export default function RegisterPage() {
           <form className="login-form" onSubmit={handleRegister}>
             <div className="form-group">
               <label htmlFor="name">Nombre completo</label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Ingresa tu nombre completo"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                required
-              />
+              <input id="name" type="text" placeholder="Ingresa tu nombre completo"
+                value={fullName} onChange={e => setFullName(e.target.value)} required />
             </div>
 
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="Ingresa tu correo"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <input id="email" type="text" placeholder="Ingresa tu correo"
+                value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
 
             <div className="form-group">
               <label htmlFor="password">Contraseña</label>
-              <input
-                id="password"
-                type="password"
-                placeholder="Crea una contraseña"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-              />
+              <input id="password" type="password" placeholder="Crea una contraseña"
+                value={password} onChange={e => setPassword(e.target.value)} required />
             </div>
 
             <div className="form-group">
               <label htmlFor="confirmPassword">Confirmar contraseña</label>
-              <input
-                id="confirmPassword"
-                type="password"
-                placeholder="Confirma tu contraseña"
-                value={confirmPassword}
-                onChange={e => setConfirm(e.target.value)}
-                required
-              />
+              <input id="confirmPassword" type="password" placeholder="Confirma tu contraseña"
+                value={confirmPassword} onChange={e => setConfirm(e.target.value)} required />
             </div>
 
             {error && (

@@ -40,24 +40,26 @@ export default function PassportPage() {
 
   useEffect(() => {
     async function loadData() {
-      const res = await fetch('/api/auth/session');
-      if (!res.ok) {
+      const raw = localStorage.getItem('sr_user_session');
+
+      if (!raw) {
         router.push('/login');
         return;
       }
 
-      const { user: sessionUser } = await res.json();
-
-      setUser({ email: sessionUser.email, full_name: sessionUser.full_name });
+      const session = JSON.parse(raw) as { email: string; fullName: string };
+      setUser({ email: session.email, full_name: session.fullName ?? session.email.split('@')[0] });
 
       // Préstamos guardados en localStorage
       const saved = localStorage.getItem('sr_loans');
       if (saved) setLoans(JSON.parse(saved));
 
-      // Badges reclamados por este usuario
-      const allClaims: Record<string, ClaimRecord[]> = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '{}');
-      const userEmail = sessionUser.email?.toLowerCase() ?? '';
-      setBadges(allClaims[userEmail] ?? []);
+      // Badges reclamados desde localStorage
+      const userEmail = session.email?.toLowerCase() ?? '';
+      const claimsRaw = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '[]');
+      const allClaims: ClaimRecord[] = Array.isArray(claimsRaw) ? claimsRaw : [];
+      const userBadges = allClaims.filter(c => c.claimerEmail?.toLowerCase() === userEmail);
+      setBadges(userBadges);
 
       setLoading(false);
     }

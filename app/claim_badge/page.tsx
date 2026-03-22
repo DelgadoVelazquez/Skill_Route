@@ -6,108 +6,90 @@ import { useEffect, useState, Suspense } from 'react';
 import '../ClaimBadgePage.css';
 
 interface BadgeData {
-  code: string;
-  title: string;
-  issuer: string;
-  event: string;
+  code:        string;
+  title:       string;
+  issuer:      string;
+  event:       string;
   description: string;
-  imageUrl: string;
-  createdAt: string;
-  claimUrl: string;
-}
-
-interface ClaimRecord {
-  code: string;
-  title: string;
-  issuer: string;
-  event: string;
-  description: string;
-  imageUrl: string;
-  claimedAt: string;
-  claimerName: string;
-  claimerEmail: string;
-  txid?: string;
-  explorerUrl?: string;
+  image_url:   string;
+  created_at:  string;
+  claim_url:   string;
 }
 
 function ClaimBadgeContent() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
 
-  const [badge, setBadge] = useState<BadgeData | null>(null);
+  const [badge, setBadge]       = useState<BadgeData | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [claimed, setClaimed] = useState(false);
-  const [alreadyClaimed, setAlreadyClaimed] = useState(false);
+  const [name, setName]         = useState('');
+  const [email, setEmail]       = useState('');
+  const [loading, setLoading]   = useState(false);
+  const [claimed, setClaimed]   = useState(false);
+  const [txid, setTxid]         = useState('');
+  const [claimError, setClaimError] = useState('');
 
   useEffect(() => {
-    if (!code) {
-      setNotFound(true);
-      return;
-    }
-    const all: BadgeData[] = JSON.parse(localStorage.getItem('sr_badges_created') ?? '[]');
-    const found = all.find(b => b.code === code);
-    if (!found) {
-      setNotFound(true);
-    } else {
-      setBadge(found);
-    }
+    if (!code) { setNotFound(true); return; }
+    const all = JSON.parse(localStorage.getItem('sr_badges_created') ?? '[]');
+    const found = all.find((b: { code: string }) => b.code === code);
+    if (!found) { setNotFound(true); return; }
+    setBadge({
+      code:       found.code,
+      title:      found.title,
+      issuer:     found.issuer,
+      event:      found.event,
+      description: found.description,
+      image_url:  found.imageUrl ?? '',
+      created_at: found.createdAt,
+      claim_url:  found.claimUrl,
+    });
   }, [code]);
 
-  async function handleClaim(e: React.SyntheticEvent<HTMLFormElement>) {
+  function handleClaim(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!badge) return;
+    setClaimError('');
     setLoading(true);
 
-    const allClaims: Record<string, ClaimRecord[]> = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '{}');
-    const userClaims = allClaims[email.toLowerCase()] ?? [];
-    const alreadyHas = userClaims.some(c => c.code === badge.code);
+    // Verificar si ya reclamó
+    const claimsRaw = JSON.parse(localStorage.getItem('sr_badge_claims') ?? '[]');
+    const claims: Array<{
+      code: string; title: string; issuer: string; event: string;
+      description: string; imageUrl: string; claimedAt: string;
+      claimerName: string; claimerEmail: string;
+    }> = Array.isArray(claimsRaw) ? claimsRaw : [];
 
-    if (alreadyHas) {
-      setAlreadyClaimed(true);
+    const alreadyClaimed = claims.some(
+      c => c.code === badge.code && c.claimerEmail.toLowerCase() === email.toLowerCase()
+    );
+    if (alreadyClaimed) {
+      setClaimError('Este correo ya reclamó este badge.');
       setLoading(false);
       return;
     }
 
-    // Emitir badge SBT en Stellar vinculado a la wallet del usuario
-    let txid: string | undefined;
-    let explorerUrl: string | undefined;
-    try {
-      const res = await fetch('/api/badge/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase(), badgeCode: badge.code, title: badge.title }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        txid = data.txid;
-        explorerUrl = data.explorerUrl;
-      }
-    } catch {
-      // Si falla Stellar, igual guardamos el claim localmente
+    // Guardar claim
+    claims.push({
+      code:         badge.code,
+      title:        badge.title,
+      issuer:       badge.issuer,
+      event:        badge.event,
+      description:  badge.description,
+      imageUrl:     badge.image_url,
+      claimedAt:    new Date().toISOString(),
+      claimerName:  name,
+      claimerEmail: email.toLowerCase(),
+    });
+    localStorage.setItem('sr_badge_claims', JSON.stringify(claims));
+
+    // Guardar en sesión del usuario si está logueado con ese email
+    const session = JSON.parse(localStorage.getItem('sr_user_session') ?? 'null');
+    if (session && session.email === email.toLowerCase()) {
+      // Ya está en sr_badge_claims, passport lo leerá desde ahí
     }
 
-    const claim: ClaimRecord = {
-      code: badge.code,
-      title: badge.title,
-      issuer: badge.issuer,
-      event: badge.event,
-      description: badge.description,
-      imageUrl: badge.imageUrl,
-      claimedAt: new Date().toISOString(),
-      claimerName: name,
-      claimerEmail: email.toLowerCase(),
-      txid,
-      explorerUrl,
-    };
-
-    localStorage.setItem('sr_badge_claims', JSON.stringify({
-      ...allClaims,
-      [email.toLowerCase()]: [...userClaims, claim],
-    }));
-
+    setTxid('');
     setLoading(false);
     setClaimed(true);
   }
@@ -146,23 +128,16 @@ function ClaimBadgeContent() {
           <div className="claim-top">
             <div className="claim-pill">• BADGE RECLAMADO EXITOSAMENTE</div>
             <div className="claim-badge-circle">
-              {badge.imageUrl
-                ? <img src={badge.imageUrl} alt={badge.title} className="claim-badge-img" />
-                : (
-                  <>
-                    <div className="claim-badge-emoji">🏅</div>
-                    <span className="claim-badge-text">BADGE</span>
-                  </>
-                )
+              {badge.image_url
+                ? <img src={badge.image_url} alt={badge.title} className="claim-badge-img" />
+                : <><div className="claim-badge-emoji">🏅</div><span className="claim-badge-text">BADGE</span></>
               }
             </div>
           </div>
 
           <section className="claim-hero">
             <h1 className="claim-title">¡{badge.title}!</h1>
-            <p className="claim-meta">
-              Emitido por <strong>{badge.issuer}</strong> · {badge.event}
-            </p>
+            <p className="claim-meta">Emitido por <strong>{badge.issuer}</strong> · {badge.event}</p>
             <div className="claim-chip">🔗 {badge.code} · Stellar Blockchain</div>
           </section>
 
@@ -172,51 +147,24 @@ function ClaimBadgeContent() {
             <p style={{ margin: '0 0 20px', fontSize: 14, color: '#555' }}>
               Inicia sesión con <strong>{email}</strong> para verla en Mi Passport.
             </p>
-            <Link href="/passport" className="claim-button">
-              Ir a mi Passport →
-            </Link>
-            <p className="claim-note" style={{ marginTop: 12 }}>
-              🔒 Registrado en Stellar Blockchain · {badge.code}
-            </p>
+            {txid && (
+              <a
+                href={`https://stellar.expert/explorer/testnet/tx/${txid}`}
+                target="_blank" rel="noopener noreferrer"
+                style={{ display: 'block', marginBottom: 12, fontSize: 13, color: '#2d4fae', fontWeight: 600 }}
+              >
+                🔗 Ver en StellarExpert ↗
+              </a>
+            )}
+            <Link href="/passport" className="claim-button">Ir a mi Passport →</Link>
+            <p className="claim-note" style={{ marginTop: 12 }}>🔒 Registrado en Stellar Blockchain · {badge.code}</p>
           </div>
         </div>
       </main>
     );
   }
 
-  if (alreadyClaimed) {
-    return (
-      <main className="claim-page">
-        <div className="claim-wrapper">
-          <div className="claim-top">
-            <div className="claim-pill">• BADGE YA RECLAMADO</div>
-            <div className="claim-badge-circle">
-              {badge.imageUrl
-                ? <img src={badge.imageUrl} alt={badge.title} className="claim-badge-img" />
-                : (
-                  <>
-                    <div className="claim-badge-emoji">⚠️</div>
-                    <span className="claim-badge-text">BADGE</span>
-                  </>
-                )
-              }
-            </div>
-          </div>
-          <section className="claim-hero">
-            <h1 className="claim-title">{badge.title}</h1>
-            <p className="claim-meta">Este badge ya está asociado a <strong>{email}</strong></p>
-          </section>
-          <div className="claim-card" style={{ textAlign: 'center' }}>
-            <Link href="/passport" className="claim-button">
-              Ver mi Passport →
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const createdDate = new Date(badge.createdAt).toLocaleDateString('es-MX', {
+  const createdDate = new Date(badge.created_at).toLocaleDateString('es-MX', {
     day: 'numeric', month: 'short', year: 'numeric',
   });
 
@@ -224,26 +172,18 @@ function ClaimBadgeContent() {
     <main className="claim-page">
       <div className="claim-wrapper">
         <div className="claim-top">
-          <div className="claim-pill">• {badge.event}</div>
-
+          <div className="claim-pill">• {badge.event || 'BADGE DIGITAL'}</div>
           <div className="claim-badge-circle">
-            {badge.imageUrl
-              ? <img src={badge.imageUrl} alt={badge.title} className="claim-badge-img" />
-              : (
-                <>
-                  <div className="claim-badge-emoji">🏅</div>
-                  <span className="claim-badge-text">BADGE</span>
-                </>
-              )
+            {badge.image_url
+              ? <img src={badge.image_url} alt={badge.title} className="claim-badge-img" />
+              : <><div className="claim-badge-emoji">🏅</div><span className="claim-badge-text">BADGE</span></>
             }
           </div>
         </div>
 
         <section className="claim-hero">
           <h1 className="claim-title">{badge.title}</h1>
-          <p className="claim-meta">
-            Emitido por <strong>{badge.issuer}</strong> · {createdDate}
-          </p>
+          <p className="claim-meta">Emitido por <strong>{badge.issuer}</strong> · {createdDate}</p>
           <div className="claim-chip">🔗 {badge.code} · Stellar Blockchain</div>
         </section>
 
@@ -253,40 +193,26 @@ function ClaimBadgeContent() {
           <form className="claim-form" onSubmit={handleClaim}>
             <div className="claim-group">
               <label htmlFor="name">NOMBRE COMPLETO</label>
-              <input
-                id="name"
-                type="text"
-                placeholder="Ej. Ana García López"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-              />
+              <input id="name" type="text" placeholder="Ej. Ana García López"
+                value={name} onChange={e => setName(e.target.value)} required />
             </div>
 
             <div className="claim-group">
               <label htmlFor="email">CORREO ELECTRÓNICO</label>
-              <input
-                id="email"
-                type="email"
-                placeholder="ana@ejemplo.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                required
-              />
+              <input id="email" type="email" placeholder="ana@ejemplo.com"
+                value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
 
-            <button
-              type="submit"
-              className="claim-button"
-              disabled={loading}
-              style={{ border: 'none', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}
-            >
+            {claimError && (
+              <p style={{ margin: 0, fontSize: 13, color: '#dc2626', textAlign: 'center' }}>{claimError}</p>
+            )}
+
+            <button type="submit" className="claim-button" disabled={loading}
+              style={{ border: 'none', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
               {loading ? 'Procesando...' : 'Reclamar mi insignia →'}
             </button>
 
-            <p className="claim-note">
-              🔒 Sin wallet ni app necesaria · Solo tu email
-            </p>
+            <p className="claim-note">🔒 Sin wallet ni app necesaria · Solo tu email</p>
           </form>
         </section>
       </div>
