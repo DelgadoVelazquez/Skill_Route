@@ -33,6 +33,13 @@ export default function RegisterPage() {
       return;
     }
 
+    // 2. Generar wallet Stellar y guardar en tabla users
+    await fetch('/api/user/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, fullName }),
+    });
+
     router.push('/passport');
     setLoading(false);
   }

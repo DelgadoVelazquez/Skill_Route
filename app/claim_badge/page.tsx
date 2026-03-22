@@ -26,6 +26,8 @@ interface ClaimRecord {
   claimedAt: string;
   claimerName: string;
   claimerEmail: string;
+  txid?: string;
+  explorerUrl?: string;
 }
 
 function ClaimBadgeContent() {
@@ -54,7 +56,7 @@ function ClaimBadgeContent() {
     }
   }, [code]);
 
-  function handleClaim(e: React.FormEvent<HTMLFormElement>) {
+  async function handleClaim(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!badge) return;
     setLoading(true);
@@ -69,6 +71,24 @@ function ClaimBadgeContent() {
       return;
     }
 
+    // Emitir badge SBT en Stellar vinculado a la wallet del usuario
+    let txid: string | undefined;
+    let explorerUrl: string | undefined;
+    try {
+      const res = await fetch('/api/badge/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), badgeCode: badge.code, title: badge.title }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        txid = data.txid;
+        explorerUrl = data.explorerUrl;
+      }
+    } catch {
+      // Si falla Stellar, igual guardamos el claim localmente
+    }
+
     const claim: ClaimRecord = {
       code: badge.code,
       title: badge.title,
@@ -79,6 +99,8 @@ function ClaimBadgeContent() {
       claimedAt: new Date().toISOString(),
       claimerName: name,
       claimerEmail: email.toLowerCase(),
+      txid,
+      explorerUrl,
     };
 
     localStorage.setItem('sr_badge_claims', JSON.stringify({

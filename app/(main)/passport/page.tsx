@@ -28,6 +28,8 @@ interface ClaimRecord {
   claimedAt: string;
   claimerName: string;
   claimerEmail: string;
+  txid?: string;
+  explorerUrl?: string;
 }
 
 export default function PassportPage() {
@@ -229,7 +231,21 @@ export default function PassportPage() {
                   </span>
                   <div className="passport-badge-verify">
                     <span className="passport-stellar-chip">🔗 STELLAR</span>
-                    <button className="passport-verify-btn">Verificar ↗</button>
+                    {badge.explorerUrl ? (
+                      <a
+                        href={badge.explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="passport-verify-btn"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        Verificar ↗
+                      </a>
+                    ) : (
+                      <span className="passport-verify-btn" style={{ opacity: 0.4, cursor: 'default' }}>
+                        Sin TXID
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
